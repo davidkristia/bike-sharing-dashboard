@@ -2,10 +2,17 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
-# Load dataset
-data_path = r'C:\Users\DAVID\DBS\dashboard\main_data.csv'
-df = pd.read_csv(data_path)
+# Load dataset dengan path relatif
+data_path = os.path.join(os.path.dirname(__file__), "main_data.csv")
+
+# Cek apakah file tersedia sebelum membaca
+if os.path.exists(data_path):
+    df = pd.read_csv(data_path)
+else:
+    st.error("⚠️ File 'main_data.csv' tidak ditemukan. Pastikan file diunggah ke repository GitHub.")
+    st.stop()  # Hentikan eksekusi jika file tidak ada
 
 # Konfigurasi halaman
 st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
@@ -45,8 +52,9 @@ if 'hr' in df.columns:
     plt.ylabel("Jumlah Penyewaan")
     st.pyplot(fig)
 else:
-    st.write("Data jam tidak tersedia dalam main_data.csv.")
+    st.write("⚠️ Data jam tidak tersedia dalam 'main_data.csv'.")
 
+# Kesimpulan
 st.write("📌 **Kesimpulan:**")
 st.write("- Cuaca mempengaruhi jumlah penyewaan sepeda secara signifikan.")
 st.write("- Tren penyewaan sepeda bervariasi berdasarkan musim dan waktu.")
