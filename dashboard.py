@@ -7,56 +7,33 @@ import os
 # Load dataset dengan path relatif
 data_path = os.path.join(os.path.dirname(__file__), "main_data.csv")
 
-# Cek apakah file tersedia sebelum membaca
-if os.path.exists(data_path):
-    df = pd.read_csv(data_path)
+# Streamlit App Title
+st.title("Dashboard Bike Sharing Dataset")
+
+# Sidebar - Pilihan Dataset
+dataset_option = st.sidebar.selectbox("Pilih Dataset:", ["Day Data", "Hour Data"])
+
+# Menampilkan Data
+if dataset_option == "Day Data":
+    st.write("## Day Dataset")
+    st.write(day_df.head())
 else:
-    st.error("⚠️ File 'main_data.csv' tidak ditemukan. Pastikan file diunggah ke repository GitHub.")
-    st.stop()  # Hentikan eksekusi jika file tidak ada
+    st.write("## Hour Dataset")
+    st.write(hour_df.head())
 
-# Konfigurasi halaman
-st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
+# Statistik Deskriptif
+st.subheader("Statistik Deskriptif")
+st.write(day_df.describe() if dataset_option == "Day Data" else hour_df.describe())
 
-# Judul Dashboard
-st.title("🚲 Bike Sharing Dashboard")
-st.write("Analisis penyewaan sepeda berdasarkan cuaca dan waktu.")
-
-# Sidebar untuk filter
-st.sidebar.header("Filter Data")
-selected_season = st.sidebar.selectbox("Pilih Musim", df['season'].unique())
-filtered_df = df[df['season'] == selected_season]
-
-# Visualisasi jumlah penyewaan sepeda berdasarkan cuaca
-st.subheader("📊 Pengaruh Cuaca terhadap Penyewaan Sepeda")
-fig, ax = plt.subplots(figsize=(8, 4))
-sns.boxplot(x='weathersit', y='cnt', data=filtered_df, ax=ax)
-plt.xlabel("Kondisi Cuaca")
-plt.ylabel("Jumlah Penyewaan Sepeda")
+# Visualisasi Distribusi Penyewaan Sepeda berdasarkan Cuaca
+st.subheader("Distribusi Penyewaan Sepeda berdasarkan Cuaca")
+fig, ax = plt.subplots()
+sns.boxplot(x='weathersit', y='cnt', data=day_df if dataset_option == "Day Data" else hour_df, ax=ax)
 st.pyplot(fig)
 
-# Visualisasi tren penyewaan sepeda harian
-st.subheader("📈 Tren Penyewaan Sepeda Harian")
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.lineplot(x='dteday', y='cnt', data=filtered_df, ax=ax)
-plt.xticks(rotation=45)
-plt.xlabel("Tanggal")
-plt.ylabel("Jumlah Penyewaan")
-st.pyplot(fig)
-
-# Visualisasi pola penggunaan sepeda berdasarkan jam
-st.subheader("⏳ Pola Penyewaan Sepeda Berdasarkan Jam")
-if 'hr' in df.columns:
-    fig, ax = plt.subplots(figsize=(8, 4))
-    sns.lineplot(x='hr', y='cnt', data=df, ax=ax)
-    plt.xlabel("Jam")
-    plt.ylabel("Jumlah Penyewaan")
-    st.pyplot(fig)
-else:
-    st.write("⚠️ Data jam tidak tersedia dalam 'main_data.csv'.")
-
-# Kesimpulan
-st.write("📌 **Kesimpulan:**")
-st.write("- Cuaca mempengaruhi jumlah penyewaan sepeda secara signifikan.")
-st.write("- Tren penyewaan sepeda bervariasi berdasarkan musim dan waktu.")
-
-st.write("✅ **Dashboard dibuat dengan Streamlit.**")
+# Filter Data berdasarkan Musim
+st.sidebar.subheader("Filter Data")
+season_option = st.sidebar.selectbox("Pilih Musim:", [1, 2, 3, 4])
+filtered_data = day_df[day_df['season'] == season_option] if dataset_option == "Day Data" else hour_df[hour_df['season'] == season_option]
+st.write(f"### Data untuk Musim {season_option}")
+st.write(filtered_data.head())
