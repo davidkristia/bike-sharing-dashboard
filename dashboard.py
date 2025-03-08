@@ -4,36 +4,41 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
+st.title("Bike Sharing Dashboard")
+
 # Load dataset dengan path relatif
-data_path = os.path.join(os.path.dirname(__file__), "main_data.csv")
+@st.cache_data
+def load_data():
+    try:
+        df = pd.read_csv("main_data.csv")
+        df["dteday"] = pd.to_datetime(df["dteday"])
+        return df
+    except FileNotFoundError:
+        st.error("File dataset tidak ditemukan. Pastikan 'main_data.csv' ada dalam direktori yang benar.")
+        return None
 
-# Streamlit App Title
-st.title("Dashboard Bike Sharing Dataset")
+df = load_data()
 
-# Sidebar - Pilihan Dataset
-dataset_option = st.sidebar.selectbox("Pilih Dataset:", ["Day Data", "Hour Data"])
-
-# Menampilkan Data
-if dataset_option == "Day Data":
-    st.write("## Day Dataset")
-    st.write(day_df.head())
+if df is not None:
+    st.subheader("Preview Data")
+    st.write(df.head())
+    
+    st.subheader("Statistik Data")
+    st.write(df.describe())
+    
+    st.sidebar.subheader("Filter Data")
+    season_option = st.sidebar.selectbox("Pilih Musim:", sorted(df["season"].unique()))
+    filtered_data = df[df["season"] == season_option]
+    
+    st.write(f"### Data untuk Musim {season_option}")
+    st.write(filtered_data.head())
+    
+    st.subheader("Visualisasi Jumlah Peminjaman Sepeda")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    sns.lineplot(data=df, x="dteday", y="cnt", ax=ax)
+    ax.set_title("Jumlah Peminjaman Sepeda per Hari")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Jumlah Peminjaman")
+    st.pyplot(fig)
 else:
-    st.write("## Hour Dataset")
-    st.write(hour_df.head())
-
-# Statistik Deskriptif
-st.subheader("Statistik Deskriptif")
-st.write(day_df.describe() if dataset_option == "Day Data" else hour_df.describe())
-
-# Visualisasi Distribusi Penyewaan Sepeda berdasarkan Cuaca
-st.subheader("Distribusi Penyewaan Sepeda berdasarkan Cuaca")
-fig, ax = plt.subplots()
-sns.boxplot(x='weathersit', y='cnt', data=day_df if dataset_option == "Day Data" else hour_df, ax=ax)
-st.pyplot(fig)
-
-# Filter Data berdasarkan Musim
-st.sidebar.subheader("Filter Data")
-season_option = st.sidebar.selectbox("Pilih Musim:", [1, 2, 3, 4])
-filtered_data = day_df[day_df['season'] == season_option] if dataset_option == "Day Data" else hour_df[hour_df['season'] == season_option]
-st.write(f"### Data untuk Musim {season_option}")
-st.write(filtered_data.head())
+    st.warning("Tidak ada data untuk ditampilkan.")
