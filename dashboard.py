@@ -2,11 +2,10 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
+from datetime import datetime
 
 st.title("Bike Sharing Dashboard")
 
-# Load dataset dengan path relatif
 @st.cache_data
 def load_data():
     try:
@@ -20,42 +19,56 @@ def load_data():
 df = load_data()
 
 if df is not None:
-    st.subheader("Preview Data")
-    st.write(df.head())
-    
-    st.subheader("Statistik Data")
-    st.write(df.describe())
-    
     st.sidebar.subheader("Filter Data")
+
+    # Filter berdasarkan musim
     season_option = st.sidebar.selectbox("Pilih Musim:", sorted(df["season"].unique()))
-    filtered_data = df[df["season"] == season_option]
     
-    st.write(f"### Data untuk Musim {season_option}")
+    # Filter berdasarkan rentang tanggal
+    min_date = df["dteday"].min().date()
+    max_date = df["dteday"].max().date()
+    date_range = st.sidebar.date_input("Pilih Rentang Tanggal", [min_date, max_date], min_value=min_date, max_value=max_date)
+    
+    # Filter berdasarkan rentang suhu
+    temp_range = st.sidebar.slider("Pilih Rentang Suhu", float(df["temp"].min()), float(df["temp"].max()), (float(df["temp"].min()), float(df["temp"].max())))
+
+    # Terapkan filter
+    filtered_data = df[(df["season"] == season_option) & 
+                       (df["dteday"].between(pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1]))) & 
+                       (df["temp"].between(temp_range[0], temp_range[1]))]
+
+    st.write(f"### Data untuk Musim {season_option} dan Rentang Tanggal {date_range[0]} - {date_range[1]}")
     st.write(filtered_data.head())
-    
-    # Visualisasi
-    st.subheader("Pengaruh Cuaca terhadap Jumlah Penyewaan Sepeda")
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.boxplot(x='weathersit', y='cnt', data=df, ax=ax)
-    ax.set_title('Pengaruh Cuaca terhadap Jumlah Penyewaan Sepeda')
-    ax.set_xlabel('Kondisi Cuaca')
-    ax.set_ylabel('Jumlah Penyewaan Sepeda')
-    st.pyplot(fig)
-    
-    st.subheader("Hubungan Suhu dengan Jumlah Penyewaan Sepeda")
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.scatterplot(x='temp', y='cnt', data=df, alpha=0.5, ax=ax)
-    ax.set_title('Hubungan Suhu dengan Jumlah Penyewaan Sepeda')
-    ax.set_xlabel('Suhu')
-    ax.set_ylabel('Jumlah Penyewaan Sepeda')
-    st.pyplot(fig)
-    
-    st.subheader("Distribusi Kelembapan Udara")
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.histplot(df["hum"], bins=30, kde=True, color="purple", ax=ax)
-    ax.set_title("Distribusi Kelembapan Udara")
-    ax.set_xlabel("Kelembapan")
-    ax.set_ylabel("Frekuensi")
-    st.pyplot(fig)
+
+    # Pilihan jenis visualisasi
+    st.sidebar.subheader("Pilih Visualisasi")
+    plot_type = st.sidebar.selectbox("Pilih jenis grafik:", ["Boxplot", "Scatterplot", "Histogram"])
+
+    st.subheader("Visualisasi Data")
+
+    if plot_type == "Boxplot":
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.boxplot(x='weathersit', y='cnt', data=filtered_data, ax=ax)
+        ax.set_title('Pengaruh Cuaca terhadap Jumlah Penyewaan Sepeda')
+        ax.set_xlabel('Kondisi Cuaca')
+        ax.set_ylabel('Jumlah Penyewaan Sepeda')
+        st.pyplot(fig)
+
+    elif plot_type == "Scatterplot":
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.scatterplot(x='temp', y='cnt', data=filtered_data, alpha=0.5, ax=ax)
+        ax.set_title('Hubungan Suhu dengan Jumlah Penyewaan Sepeda')
+        ax.set_xlabel('Suhu')
+        ax.set_ylabel('Jumlah Penyewaan Sepeda')
+        st.pyplot(fig)
+
+    elif plot_type == "Histogram":
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.histplot(filtered_data["hum"], bins=30, kde=True, color="purple", ax=ax)
+        ax.set_title("Distribusi Kelembapan Udara")
+        ax.set_xlabel("Kelembapan")
+        ax.set_ylabel("Frekuensi")
+        st.pyplot(fig)
+
 else:
     st.warning("Tidak ada data untuk ditampilkan.")
